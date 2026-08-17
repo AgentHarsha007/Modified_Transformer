@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baseline vs HyperNet — Comparison Report</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f8f7f4;color:#1a1a18;padding:32px 36px;font-size:17px;line-height:1.7;}
+h1{font-size:26px;font-weight:600;margin-bottom:5px;}
+.subtitle{font-size:15px;color:#73726c;margin-bottom:28px;}
+.sec-label{font-size:14px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#888780;margin-bottom:12px;padding-bottom:6px;border-bottom:0.5px solid #d3d1c7;}
+.section{margin-bottom:32px;}
+
+/* Legend strip */
+.legend{display:flex;gap:24px;margin-bottom:20px;flex-wrap:wrap;}
+.leg{display:flex;align-items:center;gap:8px;font-size:15px;color:#444441;}
+.leg-dot{width:14px;height:14px;border-radius:3px;}
+
+/* Architecture diff cards */
+.arch-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.arch-card{background:#fff;border:0.5px solid #d3d1c7;border-radius:10px;padding:20px 22px;}
+.arch-card .name{font-size:16px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.arch-card .badge{font-size:13px;padding:3px 10px;border-radius:3px;font-weight:600;}
+.badge-gray{background:#2c2c2a;color:#f1efe8;}
+.badge-amber{background:#faeeda;color:#854f0b;}
+.badge-purple{background:#eeedfe;color:#534ab7;}
+.arch-row{display:flex;justify-content:space-between;font-size:15px;padding:5px 0;border-bottom:0.5px solid #f1efe8;}
+.arch-row:last-child{border-bottom:none;}
+.arch-row .k{color:#888780;}
+.arch-row .v{font-family:ui-monospace,monospace;font-weight:600;}
+.arch-row .v.better{color:#0f6e56;}
+.arch-row .v.same{color:#888780;}
+
+/* param budget viz inside arch cards */
+.pbudget{margin-bottom:14px;}
+.pbudget-total{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+.pbudget-total .pt-label{font-size:14px;color:#888780;}
+.pbudget-total .pt-num{font-size:20px;font-weight:700;font-family:ui-monospace,monospace;}
+.pbar-track{width:100%;height:12px;background:#f1efe8;border-radius:6px;overflow:hidden;display:flex;margin-bottom:12px;}
+.pbar-seg{height:100%;transition:width .3s;}
+.plines{display:flex;flex-direction:column;gap:7px;}
+.pline{display:flex;align-items:center;gap:8px;font-size:14px;}
+.pline-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+.pline-label{color:#73726c;flex:1;}
+.pline-num{font-family:ui-monospace,monospace;font-weight:600;color:#1a1a18;}
+.pline-pct{font-size:13px;color:#b4b2a9;min-width:38px;text-align:right;}
+.pdivider{border:none;border-top:0.5px solid #e8e6df;margin:12px 0;}
+.pline.new .pline-label{color:#0f6e56;}
+.pline.new .pline-num{color:#0f6e56;}
+.pline.dim .pline-num{color:#d3d1c7;}
+
+/* Diff chip */
+.diff{display:inline-block;font-size:13px;font-weight:700;padding:2px 7px;border-radius:3px;margin-left:5px;}
+.diff-pos{background:#e1f5ee;color:#0f6e56;}
+.diff-neg{background:#fcebeb;color:#a32d2d;}
+.diff-neu{background:#f1efe8;color:#888780;}
+
+/* Main comparison table */
+.cmp-wrap{border:0.5px solid #d3d1c7;border-radius:10px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:15px;}
+thead th{background:#f1efe8;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#73726c;padding:10px 14px;border-bottom:0.5px solid #d3d1c7;}
+thead th:first-child{text-align:left;}
+tbody td{padding:9px 14px;border-bottom:0.5px solid #e8e6df;text-align:center;font-family:ui-monospace,monospace;}
+tbody td:first-child{text-align:left;font-family:system-ui,sans-serif;font-weight:600;color:#1a1a18;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr.task-header td{background:#f8f7f4;font-size:14px;color:#888780;padding:5px 14px;text-align:left;font-family:system-ui,sans-serif;font-weight:600;letter-spacing:.04em;}
+.best-cell{background:#e1f5ee;color:#085041;font-weight:700;border-radius:3px;}
+.near-cell{background:#eeedfe;color:#3c3489;font-weight:600;}
+.std{color:#888780;font-size:13px;}
+
+/* Per-task detail cards */
+.task-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.task-card{background:#fff;border:0.5px solid #d3d1c7;border-radius:10px;padding:20px 22px;}
+.task-name{font-size:16px;font-weight:600;}
+.task-desc{font-size:14px;color:#888780;margin-bottom:12px;}
+
+.seed-tbl{width:100%;border-collapse:collapse;font-size:14px;}
+.seed-tbl th{text-align:center;font-size:13px;font-weight:600;color:#73726c;padding:6px 8px;border-bottom:0.5px solid #e8e6df;background:#f8f7f4;}
+.seed-tbl th:first-child,.seed-tbl td:first-child{text-align:left;}
+.seed-tbl td{padding:5px 8px;text-align:center;border-bottom:0.5px solid #f1efe8;font-family:ui-monospace,monospace;}
+.seed-tbl tr:last-child td{border-bottom:none;}
+.tag-es{display:inline-block;font-size:12px;background:#faeeda;color:#854f0b;border-radius:2px;padding:1px 5px;font-family:system-ui,sans-serif;font-weight:600;}
+.tag-fr{display:inline-block;font-size:12px;background:#e1f5ee;color:#085041;border-radius:2px;padding:1px 5px;font-family:system-ui,sans-serif;font-weight:600;}
+.hi{color:#0f6e56;font-weight:700;}
+
+.summary-row{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;padding-top:10px;border-top:0.5px solid #e8e6df;gap:12px;flex-wrap:wrap;}
+.model-chip{text-align:center;}
+.model-name{font-size:13px;color:#888780;display:block;margin-bottom:3px;}
+.model-acc{font-size:22px;font-weight:700;font-family:ui-monospace,monospace;}
+.model-std{font-size:14px;color:#888780;font-family:ui-monospace,monospace;}
+.winner-chip{font-size:13px;padding:4px 10px;border-radius:3px;font-weight:600;align-self:center;}
+
+/* Bar chart */
+.chart-wrap{position:relative;width:100%;height:360px;}
+.h2{font-size:18px;font-weight:600;margin-bottom:16px;}
+</style>
+</head>
+<body>
+
+<h1>StandardWide vs HyperNet (ΔW) — Strict Comparison</h1>
+<div class="subtitle">bAbI en-10k · 5 seeds (42–46) · Same hyperparameters · Param-matched backbone</div>
+
+<!-- ─── LEGEND ─────────────────────────────── -->
+<div class="legend">
+  <div class="leg"><div class="leg-dot" style="background:#1a1a18;"></div> Baseline (Wide Attn, d_attn=264)</div>
+  <div class="leg"><div class="leg-dot" style="background:#ef9f27;"></div> Mean→ΔW (HyperNet, seq-mean input)</div>
+  <div class="leg"><div class="leg-dot" style="background:#534ab7;"></div> CLS→ΔW (HyperNet, CLS token input)</div>
+</div>
+
+<!-- ─── ARCHITECTURE DIFF ─────────────────── -->
+<div class="section">
+  <div class="sec-label">Architecture comparison</div>
+  <div class="arch-grid">
+
+    <!-- BASELINE CARD -->
+    <div class="arch-card" style="border-color:#1a1a18;border-width:1px;">
+      <div class="name"><div class="leg-dot" style="background:#1a1a18;"></div> Standard Wide Baseline <span class="badge badge-gray">Baseline</span></div>
+
+      <!-- param budget bar -->
+      <div class="pbudget">
+        <div class="pbudget-total">
+          <span class="pt-label">Total params (qa1)</span>
+          <span class="pt-num" style="color:#1a1a18;">642,374</span>
+        </div>
+        <!-- bar: token-emb ~2.8k, pos 25.6k, attn 405.5k, ffn 198.1k, clf 8.5k -->
+        <div class="pbar-track">
+          <div class="pbar-seg" style="width:0.4%;background:#888780;"></div>
+          <div class="pbar-seg" style="width:4%;background:#444441;"></div>
+          <div class="pbar-seg" style="width:63.2%;background:#1a1a18;"></div>
+          <div class="pbar-seg" style="width:30.9%;background:#2c2c2a;"></div>
+          <div class="pbar-seg" style="width:1.3%;background:#73726c;"></div>
+        </div>
+        <div class="plines">
+          <div class="pline"><div class="pline-dot" style="background:#888780;"></div><span class="pline-label">Token emb (task V×128)</span><span class="pline-num">~2,700</span><span class="pline-pct">0.4%</span></div>
+          <div class="pline"><div class="pline-dot" style="background:#444441;"></div><span class="pline-label">Pos emb + input LN</span><span class="pline-num">25,856</span><span class="pline-pct">4.0%</span></div>
+          <div class="pline"><div class="pline-dot" style="background:#1a1a18;"></div><span class="pline-label">Attn WQ/WK/WV/WO ×3 hops</span><span class="pline-num" style="color:#1a1a18;font-weight:700;">405,504</span><span class="pline-pct" style="color:#1a1a18;font-weight:600;">63.2%</span></div>
+          <div class="pline"><div class="pline-dot" style="background:#2c2c2a;"></div><span class="pline-label">FFN (fc1+fc2+LN) ×3 hops</span><span class="pline-num">199,680</span><span class="pline-pct">31.1%</span></div>
+          <div class="pline"><div class="pline-dot" style="background:#73726c;"></div><span class="pline-label">Classifier head (LN+fc1)</span><span class="pline-num">8,512</span><span class="pline-pct">1.3%</span></div>
+        </div>
+        <hr class="pdivider">
+        <div class="arch-row"><span class="k">d_attn per head</span><span class="v" style="color:#1a1a18;">264 (wide, +136 vs 128)</span></div>
+        <div class="arch-row"><span class="k">WQ/WK/WV/WO shape</span><span class="v" style="color:#1a1a18;">128×264 each</span></div>
+        <div class="arch-row"><span class="k">HyperNet</span><span class="v same">none — fixed weights</span></div>
+        <div class="arch-row"><span class="k">ΔW injection</span><span class="v same">—</span></div>
+      </div>
+    </div>
+
+    <!-- MEAN→ΔW CARD -->
+    <div class="arch-card" style="border-color:#ef9f27;">
+      <div class="name"><div class="leg-dot" style="background:#ef9f27;"></div> Mean→ΔW <span class="badge badge-amber">HyperNet</span></div>
+
+      <div class="pbudget">
+        <div class="pbudget-total">
+          <span class="pt-label">Total params (qa1)</span>
+          <span class="pt-num" style="color:#ba7517;">641,479</span>
+        </div>
+        <!-- bar: token ~2.7k, pos 25.8k, attn 196.6k, ffn 199.7k, hypernet 208k, clf 8.5k -->
+        <div class="pbar-track">
+          <div class="pbar-seg" style="width:0.4%;background:#fac775;"></div>
+          <div class="pbar-seg" style="width:4%;background:#ef9f27;opacity:.5;"></div>
+          <div class="pbar-seg" style="width:30.7%;background:#ef9f27;opacity:.6;"></div>
+          <div class="pbar-seg" style="width:31.2%;background:#ba7517;opacity:.5;"></div>
+          <div class="pbar-seg" style="width:32.5%;background:#854f0b;"></div>
+          <div class="pbar-seg" style="width:1.3%;background:#fac775;"></div>
+        </div>
+        <div class="plines">
+          <div class="pline"><div class="pline-dot" style="background:#fac775;"></div><span class="pline-label">Token emb (task V×128)</span><span class="pline-num">~2,700</span><span class="pline-pct">0.4%</span></div>
+          <div class="pline"><div class="pline-dot" style="background:#ef9f27;opacity:.5;"></div><span class="pline-label">Pos emb + input LN</span><span class="pline-num">25,856</span><span class="pline-pct">4.0%</span></div>
+          <div class="pline"><div class="pline-dot" style="background:#ef9f27;opacity:.6;"></div><span class="pline-label">Attn WQ/WK/WV/WO ×3 hops</span><span class="pline-num" style="color:#854f0b;font-weight:700;">196,608</span><span class="pline-pct" style="color:#854f0b;font-weight:600;">30.7%</span></div>
+          <div class="pline"><div class="pline-dot" style="background:#ba7517;opacity:.5;"></div><span class="pline-label">FFN (fc1+fc2+LN) ×3 hops</span><span class="pline-num">199,680</span><span class="pline-pct">31.2%</span></div>
+          <div class="pline new"><div class="pline-dot" style="background:#854f0b;"></div><span class="pline-label">HyperNet MLP (shared ×3)</span><span class="pline-num">208,001</span><span class="pline-pct" style="color:#854f0b;font-weight:600;">32.5%</span></div>
+          <div class="pline"><div class="pline-dot" style="background:#fac775;"></div><span class="pline-label">Classifier head (LN+fc1)</span><span class="pline-num">8,512</span><span class="pline-pct">1.3%</span></div>
+        </div>
+        <hr class="pdivider">
+        <div class="arch-row"><span class="k">d_attn per head</span><span class="v better">128 (standard, −208,896)</span></div>
+        <div class="arch-row"><span class="k">WQ/WK/WV/WO shape</span><span class="v better">128×128 each</span></div>
+        <div class="arch-row"><span class="k">HyperNet</span><span class="v better">MLP 128→32→32→6144</span></div>
+        <div class="arch-row"><span class="k">Context signal</span><span class="v better">seq-mean of all tokens</span></div>
+      </div>
+    </div>
+
+    <!-- CLS→ΔW CARD -->
+    <div class="arch-card" style="border-color:#7f77dd;">
+      <div class="name"><div class="leg-dot" style="background:#534ab7;"></div> CLS→ΔW <span class="badge badge-purple">HyperNet</span></div>
+
+      <div class="pbudget">
+        <div class="pbudget-total">
+          <span class="pt-label">Total params (qa1)</span>
+          <span class="pt-num" style="color:#3c3489;">641,479</span>
+        </div>
+        <!-- identical bar to Mean→ΔW -->
+        <div class="pbar-track">
+          <div class="pbar-seg" style="width:0.4%;background:#afa9ec;"></div>
+          <div class="pbar-seg" style="width:4%;background:#7f77dd;opacity:.5;"></div>
+          <div class="pbar-seg" style="width:30.7%;background:#7f77dd;opacity:.6;"></div>
+          <div class="pbar-seg" style="width:31.2%;background:#534ab7;opacity:.5;"></div>
+          <div class="pbar-seg" style="width:32.5%;background:#3c3489;"></div>
+          <div class="pbar-seg" style="width:1.3%;background:#afa9ec;"></div>
+        </div>
+        <div class="plines">
+          <div class="pline"><div class="pline-dot" style="background:#afa9ec;"></div><span class="pline-label">Token emb (task V×128)</span><span class="pline-num">~2,700</span><span class="pline-pct">0.4%</span></div>
+          <div class="pline"><div class="pline-dot" style="background:#7f77dd;opacity:.5;"></div><span class="pline-label">Pos emb + input LN</span><span class="pline-num">25,856</span><span class="pline-pct">4.0%</span></div>
+          <div class="pline"><div class="pline-dot" style="background:#7f77dd;opacity:.6;"></div><span class="pline-label">Attn WQ/WK/WV/WO ×3 hops</span><span class="pline-num" style="color:#3c3489;font-weight:700;">196,608</span><span class="pline-pct" style="color:#3c3489;font-weight:600;">30.7%</span></div>
+          <div class="pline"><div class="pline-dot" style="background:#534ab7;opacity:.5;"></div><span class="pline-label">FFN (fc1+fc2+LN) ×3 hops</span><span class="pline-num">199,680</span><span class="pline-pct">31.2%</span></div>
+          <div class="pline new"><div class="pline-dot" style="background:#3c3489;"></div><span class="pline-label">HyperNet MLP (shared ×3)</span><span class="pline-num">208,001</span><span class="pline-pct" style="color:#3c3489;font-weight:600;">32.5%</span></div>
+          <div class="pline"><div class="pline-dot" style="background:#afa9ec;"></div><span class="pline-label">Classifier head (LN+fc1)</span><span class="pline-num">8,512</span><span class="pline-pct">1.3%</span></div>
+        </div>
+        <hr class="pdivider">
+        <div class="arch-row"><span class="k">d_attn per head</span><span class="v better">128 (standard, −208,896)</span></div>
+        <div class="arch-row"><span class="k">WQ/WK/WV/WO shape</span><span class="v better">128×128 each</span></div>
+        <div class="arch-row"><span class="k">HyperNet</span><span class="v better">MLP 128→32→32→6144</span></div>
+        <div class="arch-row"><span class="k">Context signal</span><span class="v better">CLS token x[:,0,:] only</span></div>
+      </div>
+    </div>
+
+  </div>
+  <div style="margin-top:10px;font-size:14px;color:#888780;">
+    The HyperNet trades wide attention capacity for dynamic weight generation — same total budget, different allocation. Baseline spends <strong>63%</strong> on attention matrices; HyperNet variants split ~31% attention / 32% HyperNet / 31% FFN. The shared HyperNet (208k params) outputs low-rank ΔW corrections for Q and K every hop: <code style="background:#f1efe8;padding:1px 6px;border-radius:3px;font-size:14px;">Q′ = Q + n·U·Vᵀ (rank=8)</code>.
+  </div>
+</div>
+
+<!-- ─── SUMMARY TABLE ─────────────────────── -->
+<div class="section">
+  <div class="sec-label">Mean accuracy ± std — all tasks, all models</div>
+  <div class="cmp-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:20%;text-align:left">Task</th>
+          <th>Baseline</th>
+          <th>Mean→ΔW</th>
+          <th>vs Baseline</th>
+          <th>CLS→ΔW</th>
+          <th>vs Baseline</th>
+          <th>Best model</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>qa1 · single fact</td>
+          <td>54.28 <span class="std">±2.46</span></td>
+          <td >62.42 <span class="std">±9.93</span></td>
+          <td><span class="diff diff-pos">+8.14</span></td>
+          <td>55.20 <span class="std">±2.41</span></td>
+          <td><span class="diff diff-pos">+0.92</span></td>
+          <td>Mean→ΔW*</td>
+        </tr>
+        <tr>
+          <td>qa2 · two facts</td>
+          <td>36.04 <span class="std">±0.67</span></td>
+          <td>35.54 <span class="std">±0.63</span></td>
+          <td><span class="diff diff-neg">−0.50</span></td>
+          <td class="best-cell">36.04 <span class="std">±1.29</span></td>
+          <td><span class="diff diff-neu">±0.00</span></td>
+          <td>Tied (Baseline / CLS)</td>
+        </tr>
+        <tr>
+          <td>qa3 · three facts</td>
+          <td>20.90 <span class="std">±1.05</span></td>
+          <td>21.24 <span class="std">±0.80</span></td>
+          <td><span class="diff diff-pos">+0.34</span></td>
+          <td class="best-cell">22.06 <span class="std">±0.52</span></td>
+          <td><span class="diff diff-pos">+1.16</span></td>
+          <td>CLS→ΔW</td>
+        </tr>
+        <tr>
+          <td>qa15 · deduction</td>
+          <td>70.20 <span class="std">±6.09</span></td>
+          <td>65.24 <span class="std">±1.08</span></td>
+          <td><span class="diff diff-neg">−4.96</span></td>
+          <td class="near-cell">74.64 <span class="std">±12.99</span></td>
+          <td><span class="diff diff-pos">+4.44</span></td>
+          <td>CLS→ΔW†</td>
+        </tr>
+        <tr>
+          <td>qa16 · induction</td>
+          <td>50.18 <span class="std">±0.75</span></td>
+          <td class="best-cell">49.70 <span class="std">±0.66</span></td>
+          <td><span class="diff diff-neg">−0.48</span></td>
+          <td>49.58 <span class="std">±0.41</span></td>
+          <td><span class="diff diff-neg">−0.60</span></td>
+          <td>Tied (all ~50%)</td>
+        </tr>
+        <tr>
+          <td>qa19 · path finding</td>
+          <td>12.66 <span class="std">±0.93</span></td>
+          <td class="best-cell">14.94 <span class="std">±4.07</span></td>
+          <td><span class="diff diff-pos">+2.28</span></td>
+          <td>13.06 <span class="std">±2.08</span></td>
+          <td><span class="diff diff-pos">+0.40</span></td>
+          <td>Mean→ΔW*</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top:8px;font-size:14px;color:#888780;">
+    * High variance — seed 44 outlier strongly influences mean. &nbsp; † CLS→ΔW seed 42 reached 100% on qa15; other seeds clustered at 65–72%.
+  </div>
+</div>
+
+<!-- ─── GROUPED BAR CHART ─────────────────── -->
+<div class="section">
+  <div class="sec-label">Visual comparison — mean accuracy per task (with ±1 std error bars)</div>
+  <div class="chart-wrap"><canvas id="cmpChart"></canvas></div>
+</div>
+
+<!-- ─── PER-TASK DETAIL ───────────────────── -->
+<div class="section">
+  <div class="sec-label">Per-seed detail — all three models side by side</div>
+  <div class="task-grid">
+
+    <!-- QA1 -->
+    <div class="task-card">
+      <div class="task-name">bAbI-qa1 <span style="font-size:10px;color:#888780;font-weight:400;">· single supporting fact</span></div>
+      <div class="task-desc">Baseline 642,374 params · HyperNet 641,479 params</div>
+      <table class="seed-tbl">
+        <thead><tr><th>Seed</th><th>Baseline</th><th>Mean→ΔW</th><th>CLS→ΔW</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>42</td><td>52.9%</td><td>58.3%</td><td>56.1%</td><td><span class="tag-es">Mean full</span></td></tr>
+          <tr><td>43</td><td>58.9%</td><td>58.2%</td><td>54.7%</td><td><span class="tag-es">CLS ES ep47</span></td></tr>
+          <tr><td>44</td><td>54.1%</td><td class="hi">82.2%</td><td>51.7%</td><td>Mean breakthrough</td></tr>
+          <tr><td>45</td><td>53.8%</td><td>57.7%</td><td class="hi">59.1%</td><td><span class="tag-es">Mean ES ep37</span></td></tr>
+          <tr><td>46</td><td>51.7%</td><td>55.7%</td><td>54.4%</td><td><span class="tag-es">Mean ES ep45</span></td></tr>
+        </tbody>
+      </table>
+      <div class="summary-row">
+        <div class="model-chip"><span class="model-name">Baseline</span><span class="model-acc" style="color:#1a1a18;">54.28</span><span class="model-std">±2.46%</span></div>
+        <div class="model-chip"><span class="model-name">Mean→ΔW</span><span class="model-acc" style="color:#ef9f27;">62.42</span><span class="model-std">±9.93%</span></div>
+        <div class="model-chip"><span class="model-name">CLS→ΔW</span><span class="model-acc" style="color:#534ab7;">55.20</span><span class="model-std">±2.41%</span></div>
+        <span class="winner-chip" style="background:#faeeda;color:#854f0b;">Mean→ΔW leads, high σ</span>
+      </div>
+    </div>
+
+    <!-- QA2 -->
+    <div class="task-card">
+      <div class="task-name">bAbI-qa2 <span style="font-size:10px;color:#888780;font-weight:400;">· two supporting facts</span></div>
+      <div class="task-desc">Baseline 644,166 params · HyperNet 643,271 params</div>
+      <table class="seed-tbl">
+        <thead><tr><th>Seed</th><th>Baseline</th><th>Mean→ΔW</th><th>CLS→ΔW</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>42</td><td>36.4%</td><td>36.0%</td><td class="hi">36.8%</td><td><span class="tag-es">all ES ~ep24</span></td></tr>
+          <tr><td>43</td><td>36.1%</td><td>35.7%</td><td>36.0%</td><td><span class="tag-es">all ES</span></td></tr>
+          <tr><td>44</td><td>36.1%</td><td>35.9%</td><td class="hi">37.8%</td><td><span class="tag-es">all ES</span></td></tr>
+          <tr><td>45</td><td class="hi">34.8%</td><td>34.3%</td><td>33.9%</td><td><span class="tag-es">all ES ~ep23</span></td></tr>
+          <tr><td>46</td><td class="hi">36.8%</td><td>35.8%</td><td>35.7%</td><td><span class="tag-es">all ES</span></td></tr>
+        </tbody>
+      </table>
+      <div class="summary-row">
+        <div class="model-chip"><span class="model-name">Baseline</span><span class="model-acc" style="color:#1a1a18;">36.04</span><span class="model-std">±0.67%</span></div>
+        <div class="model-chip"><span class="model-name">Mean→ΔW</span><span class="model-acc" style="color:#ef9f27;">35.54</span><span class="model-std">±0.63%</span></div>
+        <div class="model-chip"><span class="model-name">CLS→ΔW</span><span class="model-acc" style="color:#534ab7;">36.04</span><span class="model-std">±1.29%</span></div>
+        <span class="winner-chip" style="background:#f1efe8;color:#5f5e5a;">All tied · ~36%</span>
+      </div>
+    </div>
+
+    <!-- QA3 -->
+    <div class="task-card">
+      <div class="task-name">bAbI-qa3 <span style="font-size:10px;color:#888780;font-weight:400;">· three supporting facts</span></div>
+      <div class="task-desc">Baseline 644,294 params · HyperNet 643,399 params</div>
+      <table class="seed-tbl">
+        <thead><tr><th>Seed</th><th>Baseline</th><th>Mean→ΔW</th><th>CLS→ΔW</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>42</td><td>21.3%</td><td>21.4%</td><td class="hi">21.5%</td><td><span class="tag-es">all ES</span></td></tr>
+          <tr><td>43</td><td>21.6%</td><td class="hi">22.7%</td><td class="hi">22.2%</td><td><span class="tag-es">Baseline ES ep38</span></td></tr>
+          <tr><td>44</td><td>18.8%</td><td>20.4%</td><td class="hi">21.9%</td><td><span class="tag-es">Baseline ES ep23</span></td></tr>
+          <tr><td>45</td><td class="hi">21.4%</td><td>20.9%</td><td>21.7%</td><td><span class="tag-es">ES all</span></td></tr>
+          <tr><td>46</td><td class="hi">21.4%</td><td>20.8%</td><td class="hi">23.0%</td><td>Mean full 60 ep</td></tr>
+        </tbody>
+      </table>
+      <div class="summary-row">
+        <div class="model-chip"><span class="model-name">Baseline</span><span class="model-acc" style="color:#1a1a18;">20.90</span><span class="model-std">±1.05%</span></div>
+        <div class="model-chip"><span class="model-name">Mean→ΔW</span><span class="model-acc" style="color:#ef9f27;">21.24</span><span class="model-std">±0.80%</span></div>
+        <div class="model-chip"><span class="model-name">CLS→ΔW</span><span class="model-acc" style="color:#534ab7;">22.06</span><span class="model-std">±0.52%</span></div>
+        <span class="winner-chip" style="background:#eeedfe;color:#3c3489;">CLS→ΔW edges ahead</span>
+      </div>
+    </div>
+
+    <!-- QA15 -->
+    <div class="task-card">
+      <div class="task-name">bAbI-qa15 <span style="font-size:10px;color:#888780;font-weight:400;">· basic deduction</span></div>
+      <div class="task-desc">Baseline 641,988 params · HyperNet 641,093 params</div>
+      <table class="seed-tbl">
+        <thead><tr><th>Seed</th><th>Baseline</th><th>Mean→ΔW</th><th>CLS→ΔW</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>42</td><td>66.9%</td><td>66.9%</td><td class="hi">100.0%</td><td style="color:#0f6e56;font-weight:700;">CLS perfect!</td></tr>
+          <tr><td>43</td><td class="hi">67.7%</td><td>64.1%</td><td>71.9%</td><td>CLS full run</td></tr>
+          <tr><td>44</td><td class="hi">82.3%</td><td>65.6%</td><td>71.0%</td><td>Baseline outlier</td></tr>
+          <tr><td>45</td><td>68.1%</td><td>64.0%</td><td>65.1%</td><td><span class="tag-es">CLS ES ep51</span></td></tr>
+          <tr><td>46</td><td>66.0%</td><td>65.4%</td><td>65.2%</td><td><span class="tag-es">all ES</span></td></tr>
+        </tbody>
+      </table>
+      <div class="summary-row">
+        <div class="model-chip"><span class="model-name">Baseline</span><span class="model-acc" style="color:#1a1a18;">70.20</span><span class="model-std">±6.09%</span></div>
+        <div class="model-chip"><span class="model-name">Mean→ΔW</span><span class="model-acc" style="color:#ef9f27;">65.24</span><span class="model-std">±1.08%</span></div>
+        <div class="model-chip"><span class="model-name">CLS→ΔW</span><span class="model-acc" style="color:#534ab7;">74.64</span><span class="model-std">±12.99%</span></div>
+        <span class="winner-chip" style="background:#eeedfe;color:#3c3489;">CLS leads, very high σ</span>
+      </div>
+    </div>
+
+    <!-- QA16 -->
+    <div class="task-card">
+      <div class="task-name">bAbI-qa16 <span style="font-size:10px;color:#888780;font-weight:400;">· basic induction</span></div>
+      <div class="task-desc">Baseline 641,988 params · HyperNet 641,093 params</div>
+      <table class="seed-tbl">
+        <thead><tr><th>Seed</th><th>Baseline</th><th>Mean→ΔW</th><th>CLS→ΔW</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>42</td><td class="hi">49.9%</td><td>50.3%</td><td>49.9%</td><td><span class="tag-es">Mean ES ep44</span></td></tr>
+          <tr><td>43</td><td class="hi">49.1%</td><td>50.2%</td><td>49.2%</td><td><span class="tag-es">all ES ~ep21-31</span></td></tr>
+          <tr><td>44</td><td class="hi">49.9%</td><td>48.5%</td><td>49.1%</td><td><span class="tag-es">all ES</span></td></tr>
+          <tr><td>45</td><td class="hi">51.3%</td><td>49.5%</td><td>49.1%</td><td><span class="tag-es">all ES</span></td></tr>
+          <tr><td>46</td><td class="hi">50.7%</td><td>50.0%</td><td class="hi">50.2%</td><td><span class="tag-es">all ES</span></td></tr>
+        </tbody>
+      </table>
+      <div class="summary-row">
+        <div class="model-chip"><span class="model-name">Baseline</span><span class="model-acc" style="color:#1a1a18;">50.18</span><span class="model-std">±0.75%</span></div>
+        <div class="model-chip"><span class="model-name">Mean→ΔW</span><span class="model-acc" style="color:#ef9f27;">49.70</span><span class="model-std">±0.66%</span></div>
+        <div class="model-chip"><span class="model-name">CLS→ΔW</span><span class="model-acc" style="color:#534ab7;">49.58</span><span class="model-std">±0.41%</span></div>
+        <span class="winner-chip" style="background:#f1efe8;color:#5f5e5a;">All ~50% — near-chance</span>
+      </div>
+    </div>
+
+    <!-- QA19 -->
+    <div class="task-card">
+      <div class="task-name">bAbI-qa19 <span style="font-size:10px;color:#888780;font-weight:400;">· path finding</span></div>
+      <div class="task-desc">Baseline 642,764 params · HyperNet 641,869 params</div>
+      <table class="seed-tbl">
+        <thead><tr><th>Seed</th><th>Baseline</th><th>Mean→ΔW</th><th>CLS→ΔW</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>42</td><td>12.3%</td><td>11.1%</td><td class="hi">13.4%</td><td><span class="tag-es">Mean ES ep23</span></td></tr>
+          <tr><td>43</td><td class="hi">14.5%</td><td>11.1%</td><td>11.3%</td><td><span class="tag-es">Mean ES ep25</span></td></tr>
+          <tr><td>44</td><td>12.0%</td><td class="hi">20.8%</td><td class="hi">16.9%</td><td>Both full 60 ep</td></tr>
+          <tr><td>45</td><td>12.4%</td><td class="hi">12.9%</td><td>12.5%</td><td>Mean full; CLS ES ep29</td></tr>
+          <tr><td>46</td><td>12.1%</td><td class="hi">18.8%</td><td>11.2%</td><td>Mean full; CLS ES ep55</td></tr>
+        </tbody>
+      </table>
+      <div class="summary-row">
+        <div class="model-chip"><span class="model-name">Baseline</span><span class="model-acc" style="color:#1a1a18;">12.66</span><span class="model-std">±0.93%</span></div>
+        <div class="model-chip"><span class="model-name">Mean→ΔW</span><span class="model-acc" style="color:#ef9f27;">14.94</span><span class="model-std">±4.07%</span></div>
+        <div class="model-chip"><span class="model-name">CLS→ΔW</span><span class="model-acc" style="color:#534ab7;">13.06</span><span class="model-std">±2.08%</span></div>
+        <span class="winner-chip" style="background:#faeeda;color:#854f0b;">Mean leads, high σ</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── KEY FINDINGS ───────────────────────── -->
+<div class="section">
+  <div class="sec-label">Key findings</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div style="background:#fff;border:0.5px solid #d3d1c7;border-radius:10px;padding:20px 22px;">
+      <div style="font-size:16px;font-weight:600;margin-bottom:10px;color:#0f6e56;">Where ΔW helps</div>
+      <div style="font-size:15px;line-height:1.8;color:#2c2c2a;">
+        <strong>qa1:</strong> Mean→ΔW gains +8.1pp mean — driven by seed 44 breaking through to 82.2% (vs baseline 54.1%). The sequence-mean context signal lets the hypernetwork specialise attention per-sample.<br><br>
+        <strong>qa15:</strong> CLS→ΔW seed 42 hit perfect 100%. The deduction task seems uniquely suited to CLS-conditioned weight shifts, though only one seed triggered this mode.<br><br>
+        <strong>qa19:</strong> Mean→ΔW seeds 44 and 46 reached 20.8% and 18.8%, substantially above the baseline ceiling of ~12–14%.
+      </div>
+    </div>
+    <div style="background:#fff;border:0.5px solid #d3d1c7;border-radius:10px;padding:20px 22px;">
+      <div style="font-size:16px;font-weight:600;margin-bottom:10px;color:#a32d2d;">Where ΔW doesn't help</div>
+      <div style="font-size:15px;line-height:1.8;color:#2c2c2a;">
+        <strong>qa2 / qa16:</strong> All three models are statistically tied. Two-hop and induction tasks appear to need fundamentally different reasoning beyond what context-conditioned Q/K shifts can provide.<br><br>
+        <strong>qa3:</strong> Only marginal gains (~1pp). Three-hop chaining seems bottlenecked by architecture depth, not attention quality.<br><br>
+        <strong>Variance problem:</strong> ΔW gains are unstable — high σ values (±9.93% for Mean/qa1, ±12.99% for CLS/qa15) mean results are not reproducibly better. The gains are real but seed-sensitive.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const labels = ['qa1\nSingle fact','qa2\nTwo facts','qa3\nThree facts','qa15\nDeduction','qa16\nInduction','qa19\nPath find'];
+const baseline = [54.28,36.04,20.90,70.20,50.18,12.66];
+const meanDW   = [62.42,35.54,21.24,65.24,49.70,14.94];
+const clsDW    = [55.20,36.04,22.06,74.64,49.58,13.06];
+const bsStd    = [2.46, 0.67, 1.05, 6.09, 0.75, 0.93];
+const mStd     = [9.93, 0.63, 0.80, 1.08, 0.66, 4.07];
+const cStd     = [2.41, 1.29, 0.52,12.99, 0.41, 2.08];
+
+const errPlugin = {
+  id:'err',
+  afterDatasetsDraw(chart){
+    const {ctx,scales:{x,y},data} = chart;
+    const stds=[bsStd,mStd,cStd];
+    const vals=[baseline,meanDW,clsDW];
+    const colors=['#1a1a18','#ef9f27','#534ab7'];
+    ctx.save();
+    data.datasets.forEach((ds,di)=>{
+      const meta=chart.getDatasetMeta(di);
+      meta.data.forEach((bar,i)=>{
+        const xc=bar.x, std=stds[di][i], val=vals[di][i];
+        const yHi=y.getPixelForValue(Math.min(val+std,105));
+        const yLo=y.getPixelForValue(Math.max(val-std,0));
+        const cap=4;
+        ctx.beginPath();ctx.strokeStyle=colors[di];ctx.lineWidth=1.5;
+        ctx.moveTo(xc,yLo);ctx.lineTo(xc,yHi);
+        ctx.moveTo(xc-cap,yHi);ctx.lineTo(xc+cap,yHi);
+        ctx.moveTo(xc-cap,yLo);ctx.lineTo(xc+cap,yLo);
+        ctx.stroke();
+      });
+    });
+    ctx.restore();
+  }
+};
+
+new Chart(document.getElementById('cmpChart'),{
+  type:'bar',
+  plugins:[errPlugin],
+  data:{
+    labels,
+    datasets:[
+      {label:'Baseline',data:baseline,backgroundColor:'rgba(26,26,24,0.85)',borderColor:'#1a1a18',borderWidth:1,borderRadius:3},
+      {label:'Mean→ΔW',data:meanDW,backgroundColor:'rgba(239,159,39,0.85)',borderColor:'#ba7517',borderWidth:1,borderRadius:3},
+      {label:'CLS→ΔW',data:clsDW,backgroundColor:'rgba(83,74,183,0.85)',borderColor:'#3c3489',borderWidth:1,borderRadius:3},
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:(c)=>{
+        const di=c.datasetIndex,i=c.dataIndex;
+        const stds=[bsStd,mStd,cStd];
+        const names=['Baseline','Mean→ΔW','CLS→ΔW'];
+        return ` ${names[di]}: ${c.raw.toFixed(2)}% ±${stds[di][i].toFixed(2)}%`;
+      }}}
+    },
+    scales:{
+      x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:14},color:'#73726c'}},
+      y:{min:0,max:105,grid:{color:'rgba(0,0,0,0.06)'},
+        ticks:{font:{size:14},color:'#73726c',callback:v=>v+'%'},
+        title:{display:true,text:'Test accuracy (%)',font:{size:14},color:'#73726c'}}
+    }
+  }
+});
+</script>
+</body>
+</html>
